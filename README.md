@@ -1,0 +1,1 @@
+# morijyobi-2025-python-django2-restful-api-with-flask-shibaya-misako
