@@ -27,6 +27,7 @@ class SyllabusList(MethodView):
     def post(self, data):
         """シラバス作成"""
         class_schedule_data = data.pop("class_schedule", [])
+        SyllabusDetail.validate_class_schedule_order(class_schedule_data)
 
         syllabus = Syllabus(**data)
         db.session.add(syllabus)
@@ -66,6 +67,7 @@ class SyllabusDetail(MethodView):
 
         # class_schedule が指定されている場合は全削除 → 再作成
         if class_schedule_data is not None:
+            SyllabusDetail.validate_class_schedule_order(class_schedule_data)
             ClassSchedule.query.filter_by(syllabus_id=syllabus.id).delete()
             for schedule in class_schedule_data:
                 cs = ClassSchedule(syllabus_id=syllabus.id, **schedule)
@@ -93,3 +95,12 @@ class SyllabusDetail(MethodView):
         db.session.delete(syllabus)
         db.session.commit()
         return ""
+    
+    # -------------------------
+    # class_schedule の order 重複チェック（PUT / POST 共通）
+    # -------------------------
+    @staticmethod
+    def validate_class_schedule_order(class_schedule_data):
+        orders = [item["order"] for item in class_schedule_data]
+        if len(orders) != len(set(orders)):
+            abort(400, message="class_schedule の order が重複しています。")
